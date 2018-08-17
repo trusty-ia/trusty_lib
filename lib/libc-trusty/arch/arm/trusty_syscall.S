@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Google Inc. All rights reserved
+ * Copyright (c) 2012-2018 LK Trusty Authors. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files
@@ -38,9 +38,9 @@ FUNCTION(brk)
     swi     #0
     bx      lr
 
-.section .text.exit_group
-FUNCTION(exit_group)
-    ldr     r12, =__NR_exit_group
+.section .text.exit_etc
+FUNCTION(exit_etc)
+    ldr     r12, =__NR_exit_etc
     swi     #0
     bx      lr
 
@@ -119,6 +119,18 @@ FUNCTION(close)
 .section .text.set_cookie
 FUNCTION(set_cookie)
     ldr     r12, =__NR_set_cookie
+    swi     #0
+    bx      lr
+
+.section .text.handle_set_create
+FUNCTION(handle_set_create)
+    ldr     r12, =__NR_handle_set_create
+    swi     #0
+    bx      lr
+
+.section .text.handle_set_ctrl
+FUNCTION(handle_set_ctrl)
+    ldr     r12, =__NR_handle_set_ctrl
     swi     #0
     bx      lr
 

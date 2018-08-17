@@ -24,7 +24,6 @@
 #pragma once
 
 #include <sys/types.h>
-#include "trusty_apps_uuid.h"
 
 typedef struct uuid
 {
@@ -35,4 +34,3 @@ typedef struct uuid
 } uuid_t;
 
 #define UUID_INITIAL_VALUE(uuid) {0, 0, 0, {0}}
-

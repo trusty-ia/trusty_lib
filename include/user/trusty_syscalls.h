@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017 Google Inc. All rights reserved
+ * Copyright (c) 2012-2018 LK Trusty Authors. All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files
@@ -25,7 +25,7 @@
 
 #define __NR_write		0x1
 #define __NR_brk		0x2
-#define __NR_exit_group		0x3
+#define __NR_exit_etc		0x3
 #define __NR_read		0x4
 #define __NR_ioctl		0x5
 #define __NR_nanosleep		0x6

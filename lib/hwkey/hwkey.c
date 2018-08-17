@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <err.h>
+#include <uapi/err.h>
 #include <trusty_std.h>
 #include <stdio.h>
 
@@ -108,14 +108,14 @@ static long send_req(hwkey_session_t session, struct hwkey_msg *msg, uint8_t *re
 	}
 
 	if (inf.len > sizeof(*msg) + *rsp_buf_len) {
-		TLOGE("%s: insufficient output buffer size (%lu > %u)\n",
+		TLOGE("%s: insufficient output buffer size (%zu > %zu)\n",
 		      __func__, inf.len - sizeof(*msg), *rsp_buf_len);
 		rc = ERR_TOO_BIG;
 		goto err_get_fail;
 	}
 
 	if (inf.len < sizeof(*msg)) {
-		TLOGE("%s: short buffer (%u)\n", __func__, inf.len);
+		TLOGE("%s: short buffer (%zu)\n", __func__, inf.len);
 		rc = ERR_NOT_VALID;
 		goto err_get_fail;
 	}
@@ -146,7 +146,7 @@ static long send_req(hwkey_session_t session, struct hwkey_msg *msg, uint8_t *re
 	uint32_t read_len = rc;
 	if (read_len != inf.len) {
 		// data read in does not match message length
-		TLOGE("%s: invalid read length (%u != %u)\n",
+		TLOGE("%s: invalid read length (%zu != %zu)\n",
 		       __func__, read_len, inf.len);
 		rc = ERR_IO;
 		goto err_read_fail;
@@ -165,7 +165,7 @@ err_get_fail:
 	put_msg(session, inf.id);
 err_send_fail:
 err_read_fail:
-	TLOGE("%s: failed read_msg (%ld)", __func__, rc);
+	TLOGE("%s: failed read_msg (%ld)\n", __func__, rc);
 	return rc;
 }
 

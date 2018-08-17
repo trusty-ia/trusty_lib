@@ -53,6 +53,9 @@ enum storage_cmd {
 
 	/* transaction support */
 	STORAGE_END_TRANSACTION = 9 << STORAGE_REQ_SHIFT,
+
+	STORAGE_FILE_MOVE      = 10 << STORAGE_REQ_SHIFT,
+	STORAGE_FILE_LIST      = 11 << STORAGE_REQ_SHIFT,
 };
 
 /**
@@ -90,6 +93,25 @@ enum storage_file_delete_flag {
 };
 
 /**
+ * storage_file_move_flag - Flags to control 'move' semantics.
+ * @STORAGE_FILE_MOVE_CREATE:           if the new file name does not exist, create it.
+ * @STORAGE_FILE_MOVE_CREATE_EXCLUSIVE: causes STORAGE_FILE_MOVE_CREATE to fail if the new file name
+ *                                      already exists. Only meaningful if used in combination
+ *                                      with STORAGE_FILE_MOVE_CREATE.
+ * @STORAGE_FILE_MOVE_OPEN_FILE:        file is already open.
+ * @STORAGE_FILE_MOVE_MASK:             mask for all move flags supported in current protocol.
+ *                                      All other bits must be set to 0.
+ */
+enum storage_file_move_flag {
+	STORAGE_FILE_MOVE_CREATE             = (1 << 0),
+	STORAGE_FILE_MOVE_CREATE_EXCLUSIVE   = (1 << 1),
+	STORAGE_FILE_MOVE_OPEN_FILE          = (1 << 2),
+	STORAGE_FILE_MOVE_MASK               = STORAGE_FILE_MOVE_CREATE |
+					       STORAGE_FILE_MOVE_CREATE_EXCLUSIVE |
+					       STORAGE_FILE_MOVE_OPEN_FILE,
+};
+
+/**
  * storage_file_flag - Flags to control 'open' semantics.
  * @STORAGE_FILE_OPEN_CREATE:           if this file does not exist, create it.
  * @STORAGE_FILE_OPEN_CREATE_EXCLUSIVE: causes STORAGE_FILE_OPEN_CREATE to fail if the file
@@ -108,6 +130,27 @@ enum storage_file_open_flag {
 	STORAGE_FILE_OPEN_MASK               = STORAGE_FILE_OPEN_CREATE |
 					       STORAGE_FILE_OPEN_TRUNCATE |
 					       STORAGE_FILE_OPEN_CREATE_EXCLUSIVE,
+};
+
+/**
+ * storage_file_list - Flags to control 'list' semantics.
+ * @STORAGE_FILE_LIST_START:            Start listing files.
+ * @STORAGE_FILE_LIST_END:              All files have already been listed.
+ * @STORAGE_FILE_LIST_COMMITTED:        File is committed and not removed by current transaction.
+ * @STORAGE_FILE_LIST_ADDED:            File will be added by current transaction.
+ * @STORAGE_FILE_LIST_REMOVED:          File will be removed by current transaction.
+ * @STORAGE_FILE_LIST_STATE_MASK:       mask for list flags used to indicate file state.
+ * @STORAGE_FILE_LIST_MASK:             mask for all list flags supported in current protocol.
+ *                                      All other bits must be set to 0.
+ */
+enum storage_file_list_flag {
+	STORAGE_FILE_LIST_START              = 0,
+	STORAGE_FILE_LIST_END                = 1,
+	STORAGE_FILE_LIST_COMMITTED          = 2,
+	STORAGE_FILE_LIST_ADDED              = 3,
+	STORAGE_FILE_LIST_REMOVED            = 4,
+	STORAGE_FILE_LIST_STATE_MASK         = 7,
+	STORAGE_FILE_LIST_MASK               = STORAGE_FILE_LIST_STATE_MASK,
 };
 
 /**
@@ -147,6 +190,22 @@ enum storage_msg_flag {
 struct storage_file_delete_req {
 	uint32_t flags;
 	char name[0];
+};
+
+/**
+ * struct storage_file_move_req - request format for STORAGE_FILE_OPEN
+ * @flags:          Any of storage_file_move_flag or'ed together.
+ * @handle:         Handle for file to move, if @flags contains
+ *                  STORAGE_FILE_MOVE_OPEN_FILE.
+ * @old_name_len:   Size of old file name in @old_new_name.
+ * @old_new_name:   Old file name followed by new file name. Old file name, must
+ *                  match name of @handle.
+ */
+struct storage_file_move_req {
+	uint32_t flags;
+	uint32_t handle;
+	uint32_t old_name_len;
+	char     old_new_name[0];
 };
 
 /**
@@ -213,6 +272,34 @@ struct storage_file_write_req {
 	uint32_t handle;
 	uint32_t __reserved;
 	uint8_t  data[0];
+};
+
+/**
+ * struct storage_file_list_req - request format for STORAGE_FILE_LIST
+ * @max_count:  Max number of files to return, or 0 for no limit.
+ * @flags:      STORAGE_FILE_LIST_START or a copy of @flags last returned in
+ *              storage_file_list_resp.
+ * @name:       File name last returned in storage_file_list_resp, or empty
+ *              if @flags is STORAGE_FILE_LIST_START.
+ */
+struct storage_file_list_req {
+	uint8_t max_count;
+	uint8_t flags;
+	char name[0];
+};
+
+/**
+ * struct storage_file_list_resp - response format for STORAGE_FILE_LIST
+ * @flags:      Any of the flags in storage_file_list_flag.
+ * @name:       File name (0 terminated).
+ *
+ * If @max_count in storage_file_list_req was not set to 1, then multiple
+ * storage_file_list_resp instances may be returned in a single response
+ * message.
+ */
+struct storage_file_list_resp {
+	uint8_t flags;
+	char name[0];
 };
 
 /**

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <err.h>
+#include <uapi/err.h>
 #include <trusty_std.h>
 
 #include <stdio.h>
@@ -139,7 +139,7 @@ int keymaster_get_auth_token_key(keymaster_session_t session,
 	}
 
 	if (inf.len <= sizeof(struct keymaster_message)) {
-		TLOGE("%s: invalid auth token len (%u)\n", __func__, inf.len);
+		TLOGE("%s: invalid auth token len (%zu)\n", __func__, inf.len);
 		put_msg(session, inf.id);
 		return ERR_NOT_FOUND;
 	}
@@ -147,7 +147,7 @@ int keymaster_get_auth_token_key(keymaster_session_t session,
 	uint32_t size = inf.len - sizeof(struct keymaster_message);
 	uint8_t *key_buf = malloc(size);
 	if (key_buf == NULL) {
-		TLOGE("%s: out of memory (%u)\n", __func__, inf.len);
+		TLOGE("%s: out of memory (%zu)\n", __func__, inf.len);
 		put_msg(session, inf.id);
 		return ERR_NO_MEMORY;
 	}
@@ -161,7 +161,7 @@ int keymaster_get_auth_token_key(keymaster_session_t session,
 	uint32_t read_len = rc;
 	if (read_len != inf.len){
 		// data read in does not match message length
-		TLOGE("%s: invalid read length: (%u != %u)\n",
+		TLOGE("%s: invalid read length: (%zu != %zu)\n",
 		      __func__, read_len, inf.len);
 		rc = ERR_IO;
 		goto err_bad_read;

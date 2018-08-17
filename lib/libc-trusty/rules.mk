@@ -3,6 +3,7 @@ LOCAL_DIR := $(GET_LOCAL_DIR)
 MODULE := $(LOCAL_DIR)
 
 WITH_CUSTOM_MALLOC := true
+WITHOUT_CONSOLE := true
 
 GLOBAL_INCLUDES := $(LOCAL_DIR)/include $(LKROOT)/include $(GLOBAL_INCLUDES)
 
@@ -18,7 +19,14 @@ MODULE_SRCS := \
 
 include $(LOCAL_DIR)/arch/$(ARCH)/rules.mk
 
+# dlmalloc does arithmatic on null pointers to calculate padding.
+MODULE_COMPILEFLAGS += -Wno-null-pointer-arithmetic
+
 MODULE_DEPS := \
-	lib/libc
+	lib/libc \
+
+ifeq ($(call TOBOOL,$(CLANGBUILD)), true)
+MODULE_DEPS += lib/rt
+endif
 
 include make/module.mk

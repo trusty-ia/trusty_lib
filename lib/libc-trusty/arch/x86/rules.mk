@@ -1,8 +1,5 @@
 LOCAL_DIR := $(GET_LOCAL_DIR)
 
-ifeq ($(SUBARCH),x86-32)
-SUBARCH_DIR := $(LOCAL_DIR)/32
-endif
 ifeq ($(SUBARCH),x86-64)
 SUBARCH_DIR := $(LOCAL_DIR)/64
 endif

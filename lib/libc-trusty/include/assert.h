@@ -42,7 +42,7 @@
  * multiple times, with and without NDEBUG defined.
  */
 
-#include <compiler.h>
+#include <lk/compiler.h>
 
 #undef assert
 #undef _assert
@@ -53,6 +53,13 @@
 #else
 # define	_assert(e)	assert(e)
 # define	assert(e)	((e) ? (void)0 : __assert2(__FILE__, __LINE__, __func__, #e))
+#endif
+
+#if LK_DEBUGLEVEL > 1
+#define DEBUG_ASSERT(x) assert(x)
+#else
+#define DEBUG_ASSERT(x) \
+    do { } while(0)
 #endif
 
 __BEGIN_CDECLS

@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include <err.h>
+#include <uapi/err.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <lib/storage/storage.h>
@@ -110,7 +111,7 @@ static ssize_t check_response(struct storage_msg *msg, ssize_t res)
 }
 
 static ssize_t get_response(storage_session_t session,
-                            struct iovec *rx_iovs, uint rx_iovcnt)
+                            struct iovec *rx_iovs, uint32_t rx_iovcnt)
 
 {
     uevent_t ev;
@@ -144,8 +145,8 @@ static ssize_t get_response(storage_session_t session,
     }
 
     if ((size_t)rc != mi.len) {
-        TLOGE("%s: partial message read (%d vs. %d)\n",
-              __func__, rc, mi.len);
+        TLOGE("%s: partial message read (%zd vs. %zd)\n",
+              __func__, (size_t)rc, mi.len);
         return ERR_IO;
     }
 
@@ -179,8 +180,8 @@ static int wait_to_send(handle_t session, struct ipc_msg *msg)
 }
 
 ssize_t send_reqv(storage_session_t session,
-                         struct iovec *tx_iovs, uint tx_iovcnt,
-                         struct iovec *rx_iovs, uint rx_iovcnt)
+                         struct iovec *tx_iovs, uint32_t tx_iovcnt,
+                         struct iovec *rx_iovs, uint32_t rx_iovcnt)
 {
     ssize_t rc;
 
@@ -260,6 +261,33 @@ void storage_close_file(file_handle_t fh)
     }
 }
 
+int storage_move_file(storage_session_t session, file_handle_t handle,
+                      const char *old_name, const char *new_name,
+                      uint32_t flags, uint32_t opflags)
+{
+    size_t old_name_len = strlen(old_name);
+    size_t new_name_len = strlen(new_name);
+    struct storage_msg msg = {
+        .cmd = STORAGE_FILE_MOVE,
+        .flags = _to_msg_flags(opflags),
+    };
+    struct storage_file_move_req req = {
+        .flags = flags,
+        .handle = handle,
+        .old_name_len = old_name_len,
+    };
+    struct iovec tx[4] = {
+        {&msg, sizeof(msg)},
+        {&req, sizeof(req)},
+        {(void *)old_name, old_name_len},
+        {(void *)new_name, new_name_len},
+    };
+    struct iovec rx[1] = {{&msg, sizeof(msg)}};
+
+    ssize_t rc = send_reqv(session, tx, 4, rx, 1);
+    return (int)check_response(&msg, rc);
+}
+
 int storage_delete_file(storage_session_t session, const char *name,
                         uint32_t opflags)
 {
@@ -270,6 +298,126 @@ int storage_delete_file(storage_session_t session, const char *name,
 
     ssize_t rc = send_reqv(session, tx, 3, rx, 1);
     return (int)check_response(&msg, rc);
+}
+
+struct storage_open_dir_state {
+    uint8_t buf[MAX_CHUNK_SIZE];
+    size_t buf_size;
+    size_t buf_last_read;
+    size_t buf_read;
+};
+
+int storage_open_dir(storage_session_t session, const char *path,
+                     struct storage_open_dir_state **state)
+{
+    struct storage_file_list_resp *resp;
+
+    if (path && strlen(path)) {
+        return ERR_NOT_FOUND; /* current server does not support directories */
+    }
+    *state = malloc(sizeof(**state));
+    if (*state == NULL) {
+        return ERR_NO_MEMORY;
+    }
+    resp = (void *)(*state)->buf;
+    resp->flags = STORAGE_FILE_LIST_START;
+    (*state)->buf_size = sizeof(*resp);
+    (*state)->buf_last_read = 0;
+    (*state)->buf_read = (*state)->buf_size;
+
+    return 0;
+}
+
+void storage_close_dir(storage_session_t session,
+                       struct storage_open_dir_state *state)
+{
+    free(state);
+}
+
+static int storage_read_dir_send_message(storage_session_t session,
+                                         struct storage_open_dir_state *state)
+{
+    struct storage_file_list_resp *last_item = (void *)(state->buf + state->buf_last_read);
+    struct storage_msg msg = { .cmd = STORAGE_FILE_LIST };
+    struct storage_file_list_req req = { .flags = last_item->flags };
+    struct iovec tx[3] = {
+        {&msg, sizeof(msg)},
+        {&req, sizeof(req)},
+    };
+    uint32_t tx_count = 2;
+    struct iovec rx[2] = {
+        {&msg, sizeof(msg)},
+        {state->buf, sizeof(state->buf)}
+    };
+    ssize_t rc;
+
+    if (last_item->flags != STORAGE_FILE_LIST_START) {
+        tx[2].base = last_item->name;
+        tx[2].len = strlen(last_item->name);
+        tx_count = 3;
+    }
+
+    rc = send_reqv(session, tx, tx_count, rx, 2);
+    rc = check_response(&msg, rc);
+
+    state->buf_size = (rc > 0) ? rc : 0;
+    state->buf_last_read = 0;
+    state->buf_read = 0;
+
+    if (rc < 0)
+        return rc;
+
+    return 0;
+}
+
+int storage_read_dir(storage_session_t session,
+                     struct storage_open_dir_state *state,
+                     uint8_t *flags,
+                     char *name, size_t name_out_size)
+{
+    int ret;
+    size_t rem;
+    size_t name_size;
+    struct storage_file_list_resp *item;
+
+    if (state->buf_size == 0) {
+        return ERR_IO;
+    }
+
+    if (state->buf_read >= state->buf_size) {
+        ret = storage_read_dir_send_message(session, state);
+        if (ret) {
+            return ret;
+        }
+    }
+    rem = state->buf_size - state->buf_read;
+    if (rem < sizeof(*item)) {
+        TLOGE("got short response\n");
+        return ERR_IO;
+    }
+    item = (void *)(state->buf + state->buf_read);
+    rem -= sizeof(*item);
+
+    *flags = item->flags;
+    if ((item->flags & STORAGE_FILE_LIST_STATE_MASK) == STORAGE_FILE_LIST_END) {
+        state->buf_size = 0;
+        name_size = 0;
+    } else {
+        name_size = strnlen(item->name, rem) + 1;
+        if (name_size > rem) {
+            TLOGE("got invalid filename size %zd >= %zd\n", name_size, rem);
+            return ERR_IO;
+        }
+        if (name_size >= name_out_size) {
+            return ERR_NOT_ENOUGH_BUFFER;
+        }
+        strcpy(name, item->name);
+    }
+
+    state->buf_last_read = state->buf_read;
+    state->buf_read +=  sizeof(*item) + name_size;
+
+    return 0;
 }
 
 static ssize_t _read_chunk(file_handle_t fh, storage_off_t off, void *buf, size_t size)

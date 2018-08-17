@@ -1,17 +1,24 @@
 /*
- * Copyright (c) 2017 Intel Corporation
+ * Copyright (c) 2012-2018 LK Trusty Authors. All Rights Reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files
+ * (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge,
+ * publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 /* This file is auto-generated. !!! DO NOT EDIT !!! */
@@ -19,218 +26,386 @@
 #include <asm.h>
 #include <trusty_syscalls.h>
 
-.macro  PROLOG
+FUNCTION(write)
     pushfq
     pushq %rbp
     pushq %rbx
     pushq %r15
-.endm
-
-.macro  MOV_PARAMS
-   /* Return Addr and stack*/
-   leaq 1f(%rip), %rbx
-   movq %rsp, %rbp
-.endm
-
-.macro EPILOG
-/*REVERTME: WA for wrong SS value after SYSEXIT in simics*/
-1:  pushq %rax
-    xorq %rax, %rax
-    mov  $0x5b, %ax
-    mov  %ax, %ss
-    popq %rax
+    movq $__NR_write, %rax
+    leaq .Lwrite_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
+    sysenter
+.Lwrite_sysreturn:
     popq %r15
     popq %rbx
     popq %rbp
     popfq
-.endm
-
-FUNCTION(write)
-    PROLOG
-    movq $__NR_write, %rax
-    MOV_PARAMS
-    sysenter
-    EPILOG
     ret
 
 FUNCTION(brk)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_brk, %rax
-    MOV_PARAMS
+    leaq .Lbrk_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lbrk_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
-FUNCTION(exit_group)
-    PROLOG
-    movq $__NR_exit_group, %rax
-    MOV_PARAMS
+FUNCTION(exit_etc)
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
+    movq $__NR_exit_etc, %rax
+    leaq .Lexit_etc_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lexit_etc_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(read)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_read, %rax
-    MOV_PARAMS
+    leaq .Lread_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lread_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(ioctl)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_ioctl, %rax
-    MOV_PARAMS
+    leaq .Lioctl_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lioctl_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
-/*
- * Third parameter of nanosleep is uint64_t sleep_time,
- * while kernel level sys_nanosleep accept uint32_t sleep_time_l,
- * and uint32_t sleep_time_h. In 64-bit TA solution, need to divide
- * value of RDX(third parameter of nanosleep) into 2 part while
- * invoking syscall: set value of RCX as high 32 bit value of RDX,
- * keep RDX low 32 bit value of RDX, and zero high 32 bit of RDX.
- */
 FUNCTION(nanosleep)
-    pushq %rcx
-    PROLOG
-    movq %rdx, %rcx
-    shr $32, %rcx
-    /* clear high 32 bit of RDX */
-    movl %edx, %edx
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_nanosleep, %rax
-    MOV_PARAMS
+    leaq .Lnanosleep_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
-    popq %rcx
+.Lnanosleep_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(gettime)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_gettime, %rax
-    MOV_PARAMS
+    leaq .Lgettime_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lgettime_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(mmap)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_mmap, %rax
-    MOV_PARAMS
+    leaq .Lmmap_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lmmap_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(munmap)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_munmap, %rax
-    MOV_PARAMS
+    leaq .Lmunmap_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lmunmap_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(prepare_dma)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_prepare_dma, %rax
-    MOV_PARAMS
+    leaq .Lprepare_dma_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lprepare_dma_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(finish_dma)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_finish_dma, %rax
-    MOV_PARAMS
+    leaq .Lfinish_dma_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lfinish_dma_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(port_create)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_port_create, %rax
-    MOV_PARAMS
+    leaq .Lport_create_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lport_create_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(connect)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_connect, %rax
-    MOV_PARAMS
+    leaq .Lconnect_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lconnect_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(accept)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_accept, %rax
-    MOV_PARAMS
+    leaq .Laccept_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Laccept_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(close)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_close, %rax
-    MOV_PARAMS
+    leaq .Lclose_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lclose_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(set_cookie)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_set_cookie, %rax
-    MOV_PARAMS
+    leaq .Lset_cookie_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lset_cookie_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
+    ret
+
+FUNCTION(handle_set_create)
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
+    movq $__NR_handle_set_create, %rax
+    leaq .Lhandle_set_create_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
+    sysenter
+.Lhandle_set_create_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
+    ret
+
+FUNCTION(handle_set_ctrl)
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
+    movq $__NR_handle_set_ctrl, %rax
+    leaq .Lhandle_set_ctrl_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
+    sysenter
+.Lhandle_set_ctrl_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(wait)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_wait, %rax
-    MOV_PARAMS
+    leaq .Lwait_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lwait_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(wait_any)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_wait_any, %rax
-    MOV_PARAMS
+    leaq .Lwait_any_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lwait_any_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(get_msg)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_get_msg, %rax
-    MOV_PARAMS
+    leaq .Lget_msg_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lget_msg_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(read_msg)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_read_msg, %rax
-    MOV_PARAMS
+    leaq .Lread_msg_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lread_msg_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(put_msg)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_put_msg, %rax
-    MOV_PARAMS
+    leaq .Lput_msg_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lput_msg_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
 
 FUNCTION(send_msg)
-    PROLOG
+    pushfq
+    pushq %rbp
+    pushq %rbx
+    pushq %r15
     movq $__NR_send_msg, %rax
-    MOV_PARAMS
+    leaq .Lsend_msg_sysreturn(%rip), %rbx
+    movq %rsp, %rbp
     sysenter
-    EPILOG
+.Lsend_msg_sysreturn:
+    popq %r15
+    popq %rbx
+    popq %rbp
+    popfq
     ret
