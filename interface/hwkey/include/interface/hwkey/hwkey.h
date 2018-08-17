@@ -22,6 +22,9 @@
 #define HWKEY_DERIVE_PROTOCOL_VERSION      0
 
 #define HWKEY_KDF_VERSION_BEST 0
+/*
+ * HWKEY_KDF_VERSION_1 is for single key derivation
+ */
 #define HWKEY_KDF_VERSION_1    1
 
 /**

@@ -89,7 +89,7 @@ static long send_req(hwkey_session_t session, struct hwkey_msg *msg, uint8_t *re
 		goto err_send_fail;
 	}
 
-	if(((size_t) rc) != sizeof(*msg) + req_buf_len) {
+	if (((uint32_t) rc) != sizeof(*msg) + req_buf_len) {
 		rc = ERR_IO;
 		goto err_send_fail;
 	}
@@ -143,7 +143,7 @@ static long send_req(hwkey_session_t session, struct hwkey_msg *msg, uint8_t *re
 		goto err_read_fail;
 	}
 
-	size_t read_len = (size_t) rc;
+	uint32_t read_len = rc;
 	if (read_len != inf.len) {
 		// data read in does not match message length
 		TLOGE("%s: invalid read length (%zu != %zu)\n",
